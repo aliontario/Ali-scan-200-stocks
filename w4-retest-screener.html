@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elliott Wave — W4 Retest Screener</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --bg:#0a0e17; --surface:#111827; --border:#1e2d40;
+    --blue:#1d6fa4; --blue-glow:#2a9fd6; --green:#00c896;
+    --red:#ff4d6d; --amber:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .logo { font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.15em; color:var(--blue-glow); text-transform:uppercase; }
+  .logo span { color:var(--muted); font-weight:400; }
+  .badge { font-family:var(--mono); font-size:11px; padding:3px 10px; border-radius:20px; border:1px solid var(--green); color:var(--green); letter-spacing:0.1em; }
+  main { padding:28px 32px; max-width:1200px; margin:0 auto; }
+
+  .strategy-box { background:#0d1f14; border:1px solid #1a4a2a; border-radius:8px; padding:14px 18px; margin-bottom:22px; font-family:var(--mono); font-size:11px; color:#4ade80; line-height:1.9; }
+  .strategy-box strong { color:#86efac; }
+
+  .controls { display:grid; grid-template-columns:1fr 180px 160px auto; gap:12px; margin-bottom:24px; align-items:end; }
+  @media(max-width:800px){ .controls{ grid-template-columns:1fr 1fr; } }
+  .field label { display:block; font-size:11px; font-family:var(--mono); color:var(--muted); letter-spacing:0.1em; margin-bottom:6px; text-transform:uppercase; }
+  textarea,select { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:12px; padding:10px 12px; border-radius:6px; outline:none; transition:border-color 0.2s; }
+  textarea { resize:vertical; min-height:72px; }
+  textarea:focus,select:focus { border-color:var(--blue-glow); }
+  .scan-btn { background:var(--blue); color:#fff; border:none; font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.12em; padding:12px 24px; border-radius:6px; cursor:pointer; text-transform:uppercase; white-space:nowrap; height:fit-content; transition:background 0.2s; }
+  .scan-btn:hover { background:var(--blue-glow); }
+  .scan-btn:disabled { background:var(--muted); cursor:not-allowed; }
+
+  .progress-wrap { display:none; margin-bottom:20px; }
+  .progress-wrap.active { display:block; }
+  .progress-bar-bg { background:var(--surface); border:1px solid var(--border); border-radius:4px; height:6px; overflow:hidden; margin-bottom:8px; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--blue),var(--blue-glow)); width:0%; transition:width 0.25s; border-radius:4px; }
+  .progress-text { font-family:var(--mono); font-size:11px; color:var(--muted); }
+
+  .summary { display:none; gap:12px; margin-bottom:24px; }
+  .summary.active { display:flex; flex-wrap:wrap; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 20px; flex:1; min-width:120px; }
+  .stat-card .val { font-family:var(--mono); font-size:22px; font-weight:700; line-height:1; margin-bottom:4px; }
+  .stat-card .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; }
+  .stat-card.blue { border-color:var(--blue-glow); } .stat-card.blue .val { color:var(--blue-glow); }
+  .stat-card.green { border-color:var(--green); } .stat-card.green .val { color:var(--green); }
+  .stat-card.red { border-color:var(--red); } .stat-card.red .val { color:var(--red); }
+
+  .err-box { background:#1a0a0a; border:1px solid var(--red); border-radius:6px; padding:12px 16px; font-family:var(--mono); font-size:11px; color:var(--red); margin-bottom:16px; display:none; line-height:1.7; }
+
+  .results-wrap { display:none; }
+  .results-wrap.active { display:block; }
+  .section-title { font-family:var(--mono); font-size:11px; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead tr { border-bottom:1px solid var(--border); }
+  th { font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:8px 12px; text-align:left; font-weight:400; }
+  tbody tr { border-bottom:1px solid #151e2e; transition:background 0.1s; }
+  tbody tr:hover { background:#131c2b; }
+  td { padding:11px 12px; vertical-align:middle; }
+  .t-tick { font-family:var(--mono); font-weight:700; font-size:14px; }
+  .t-tick a { color:var(--blue-glow); text-decoration:none; }
+  .t-tick a:hover { text-decoration:underline; }
+  .t-price { font-family:var(--mono); font-weight:600; }
+  .t-pos { color:var(--green); font-family:var(--mono); font-size:12px; }
+  .t-neg { color:var(--red); font-family:var(--mono); font-size:12px; }
+  .retest-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-family:var(--mono); font-size:10px; font-weight:700; background:#0d2a1a; border:1px solid var(--green); color:var(--green); }
+  .t-lvl { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .t-lvl b { color:var(--text); font-weight:600; }
+  .hot { color:var(--amber) !important; }
+  .message { font-family:var(--mono); font-size:12px; color:var(--muted); padding:40px; text-align:center; border:1px dashed var(--border); border-radius:8px; }
+  .footnote { margin-top:28px; font-size:11px; color:var(--muted); font-family:var(--mono); line-height:1.9; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Elliott Wave <span>// </span>W4 Retest Screener</div>
+  <div class="badge" id="statusBadge">READY</div>
+</header>
+
+<main>
+  <div class="strategy-box">
+    <strong>Strategy:</strong> W1 → W2 → W3 → W4 → <strong>W5 confirmed (close above W3 high)</strong> → price pulls back to W4 low zone → <strong>BUY the retest</strong><br>
+    W4 low acts as support after the full 5-wave impulse is complete. Stocks shown are retesting that level now.
+  </div>
+
+  <div class="err-box" id="errBox"></div>
+
+  <div class="controls">
+    <div class="field">
+      <label>Tickers (comma separated)</label>
+      <textarea id="tickerInput">AAPL, MSFT, NVDA, AMD, INTC, QCOM, AVGO, TXN, AMAT, LRCX, KLAC, MRVL, MU, ADI, SNPS, CDNS, FTNT, PANW, CRWD, ZBRA, GOOGL, META, CRM, ORCL, ADBE, NOW, SNOW, DDOG, ZS, OKTA, TEAM, MDB, HUBS, WDAY, VEEV, AMZN, TSLA, NFLX, SHOP, EBAY, UBER, ABNB, PYPL, COIN, RBLX, JPM, BAC, GS, MS, WFC, C, AXP, BLK, SCHW, CME, ICE, COF, DFS, USB, PNC, UNH, JNJ, PFE, MRK, ABBV, LLY, BMY, AMGN, GILD, ISRG, BSX, MDT, ABT, DXCM, XOM, CVX, MPC, VLO, PSX, COP, EOG, SLB, OXY, DVN, HAL, WMT, TGT, COST, HD, LOW, NKE, SBUX, MCD, CMG, PG, KO, PEP, GIS, BA, CAT, GE, HON, LMT, RTX, NOC, FDX, UPS, CSX, UNP, AMT, PLD, EQIX, NEE, DUK, SPG, O, FCX, NEM, ALB, CF, GOLD, NUE, STLD</textarea>
+    </div>
+    <div class="field">
+      <label>Sector Filter</label>
+      <select id="sectorSelect" onchange="filterBySector()">
+        <option value="all">All Sectors</option>
+        <option value="tech">Technology</option>
+        <option value="software">Software & Cloud</option>
+        <option value="consumer">Consumer & E-commerce</option>
+        <option value="finance">Financials</option>
+        <option value="health">Healthcare</option>
+        <option value="energy">Energy</option>
+        <option value="retail">Retail & Staples</option>
+        <option value="industrial">Industrials</option>
+        <option value="reit">REITs & Utilities</option>
+        <option value="materials">Materials</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Timeframe</label>
+      <select id="intervalSelect">
+        <option value="1h">Hourly (1H)</option>
+        <option value="4h">4 Hour (4H)</option>
+        <option value="1d" selected>Daily (1D)</option>
+        <option value="1wk">Weekly (1W)</option>
+        <option value="1mo">Monthly (1M)</option>
+      </select>
+    </div>
+    <button class="scan-btn" id="scanBtn" onclick="runScan()">▶ SCAN</button>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">Initializing...</div>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="stat-card green"><div class="val" id="statHits">—</div><div class="lbl">Retesting W4</div></div>
+    <div class="stat-card blue"><div class="val" id="statTotal">—</div><div class="lbl">Scanned</div></div>
+    <div class="stat-card red"><div class="val" id="statFailed">—</div><div class="lbl">Failed</div></div>
+    <div class="stat-card"><div class="val" id="statTime">—</div><div class="lbl">Scan Time</div></div>
+  </div>
+
+  <div class="results-wrap" id="resultsWrap">
+    <div class="section-title" id="sectionTitle">Stocks retesting W4 low after completed 5-wave cycle</div>
+    <div id="resultsContainer"></div>
+  </div>
+
+  <div class="footnote">
+    Data: Yahoo Finance · Strategy: Full W1→W5 impulse confirmed, now retesting W4 low as support · 
+    "At W4" = price within 3% of W4 low · Sorted by proximity to W4 low
+  </div>
+</main>
+
+<script>
+const SECTORS = {
+  tech:       ['AAPL','MSFT','NVDA','AMD','INTC','QCOM','AVGO','TXN','AMAT','LRCX','KLAC','MRVL','MU','ADI','SNPS','CDNS','FTNT','PANW','CRWD','ZBRA'],
+  software:   ['GOOGL','META','CRM','ORCL','ADBE','NOW','SNOW','DDOG','ZS','OKTA','TEAM','MDB','HUBS','WDAY','VEEV'],
+  consumer:   ['AMZN','TSLA','NFLX','SHOP','EBAY','UBER','ABNB','PYPL','COIN','RBLX'],
+  finance:    ['JPM','BAC','GS','MS','WFC','C','AXP','BLK','SCHW','CME','ICE','COF','DFS','USB','PNC'],
+  health:     ['UNH','JNJ','PFE','MRK','ABBV','LLY','BMY','AMGN','GILD','ISRG','BSX','MDT','ABT','DXCM'],
+  energy:     ['XOM','CVX','MPC','VLO','PSX','COP','EOG','SLB','OXY','DVN','HAL'],
+  retail:     ['WMT','TGT','COST','HD','LOW','NKE','SBUX','MCD','CMG','PG','KO','PEP','GIS'],
+  industrial: ['BA','CAT','GE','HON','LMT','RTX','NOC','FDX','UPS','CSX','UNP'],
+  reit:       ['AMT','PLD','EQIX','NEE','DUK','SPG','O'],
+  materials:  ['FCX','NEM','ALB','CF','GOLD','NUE','STLD']
+};
+
+function filterBySector() {
+  const sector = document.getElementById('sectorSelect').value;
+  if (sector === 'all') return;
+  const list = SECTORS[sector] || [];
+  document.getElementById('tickerInput').value = list.join(', ');
+}
+
+// ── Elliott Wave Detection ──
+// Returns: null (no setup), or { state, w4Low, w3High, w5High }
+// state = 'w4_retest' means W5 completed + now pulling back to W4 low
+function detectSetup(candles) {
+  let state = 0;
+  let w1Low = null, w3High = null, w3Low = null, w4Low = null, w5High = null;
+
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i], p = candles[i-1];
+    const g0 = c.close > c.open, g1 = p.close > p.open;
+    const r0 = c.close < c.open, r1 = p.close < p.open;
+    const bull = (g0 && r1 && c.close > p.open && c.open < p.close) || (g0 && g1 && c.close > p.high);
+    const bear = (r0 && g1 && c.close < p.open && c.open > p.close) || (r0 && r1 && c.close < p.low);
+
+    if (state === 0 && bull) {
+      state = 1; w1Low = Math.min(c.low, p.low);
+
+    } else if (state === 1 && bear) {
+      if (c.close >= w1Low) state = 2;
+      else { state = 0; w1Low = null; }
+
+    } else if (state === 2 && bull) {
+      state = 3;
+      w3High = Math.max(c.high, p.high);
+      w3Low  = Math.min(c.low,  p.low);
+
+    } else if (state === 3 && bear) {
+      if (c.close >= w3Low) { state = 4; w4Low = Math.min(c.low, p.low); }
+      else { state = 0; w1Low = w3High = w3Low = null; }
+
+    } else if (state === 4) {
+      // W5 confirmed — price closes above W3 high
+      if (c.close > w3High) {
+        state  = 5;
+        w5High = Math.max(c.high, p.high);
+      }
+      // If price drops below W4 low before W5 — invalidate
+      else if (c.close < w4Low) {
+        state = 0; w1Low = w3High = w3Low = w4Low = null;
+      }
+
+    } else if (state === 5) {
+      // Track W5 high as it extends
+      if (c.high > w5High) w5High = c.high;
+
+      // Now watch for pullback BACK DOWN to W4 low zone
+      // If price drops back toward W4 low = our BUY zone
+      if (c.close < w3High) {
+        // Price has pulled back below W3 high — heading toward W4 retest
+        state = 6;
+      }
+
+    } else if (state === 6) {
+      // In pullback after W5 — check if near W4 low
+      // If it drops below W4 low significantly — invalidate (breakdown)
+      if (c.close < w4Low * 0.97) {
+        state = 0; w1Low = w3High = w3Low = w4Low = w5High = null;
+      }
+      // If it rips back above W5 high — new wave, reset
+      else if (c.close > w5High) {
+        state = 0; w1Low = w3High = w3Low = w4Low = w5High = null;
+      }
+    }
+  }
+
+  if (state === 6 && w4Low !== null) {
+    return { w4Low, w3High, w5High };
+  }
+  return null;
+}
+
+// ── Fetch with proxy fallback ──
+async function fetchCandles(ticker, interval) {
+  const range = interval === '1h' ? '7d' : interval === '4h' ? '60d' : interval === '1d' ? '6mo' : interval === '1wk' ? '2y' : '5y';
+  const yUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`;
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(yUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`
+  ];
+  for (const px of proxies) {
+    try {
+      const res = await fetch(px, { signal: AbortSignal.timeout(9000) });
+      if (!res.ok) continue;
+      const raw = await res.json();
+      const parsed = raw.contents ? JSON.parse(raw.contents) : raw;
+      const result = parsed?.chart?.result?.[0];
+      if (!result) continue;
+      const ts = result.timestamp, q = result.indicators.quote[0];
+      const candles = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (q.open[i] != null && q.close[i] != null)
+          candles.push({ date: new Date(ts[i]*1000).toLocaleDateString(), open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+      }
+      if (candles.length > 5) return candles;
+    } catch(e) { continue; }
+  }
+  return null;
+}
+
+// ── Main scan ──
+async function runScan() {
+  const tickers = document.getElementById('tickerInput').value
+    .split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
+  const interval = document.getElementById('intervalSelect').value;
+  const tfLabel = {'1h':'1H','4h':'4H','1d':'Daily','1wk':'Weekly','1mo':'Monthly'}[interval] || interval;
+  const btn = document.getElementById('scanBtn');
+
+  btn.disabled = true; btn.textContent = '⏳ SCANNING...';
+  document.getElementById('errBox').style.display = 'none';
+  document.getElementById('statusBadge').textContent = 'SCANNING';
+  document.getElementById('summary').classList.remove('active');
+  document.getElementById('resultsWrap').classList.remove('active');
+
+  const pw = document.getElementById('progressWrap');
+  const pf = document.getElementById('progressFill');
+  const pt = document.getElementById('progressText');
+  pw.classList.add('active'); pf.style.width = '0%';
+
+  const hits = [];
+  let failed = 0;
+  const startTime = Date.now();
+
+  for (let i = 0; i < tickers.length; i++) {
+    const ticker = tickers[i];
+    pf.style.width = Math.round((i+1)/tickers.length*100) + '%';
+    pt.textContent = `Scanning ${ticker}  (${i+1} / ${tickers.length})  —  ${hits.length} found so far`;
+
+    try {
+      const candles = await fetchCandles(ticker, interval);
+      if (!candles) { failed++; continue; }
+      const result = detectSetup(candles);
+      if (result) {
+        const last = candles[candles.length-1];
+        const prev = candles[candles.length-2];
+        const chg = ((last.close - prev.close) / prev.close * 100).toFixed(2);
+        // How close is current price to W4 low (as %)
+        const distToW4 = ((last.close - result.w4Low) / result.w4Low * 100).toFixed(1);
+        const isAtW4   = Math.abs(parseFloat(distToW4)) <= 3; // within 3% of W4 low
+        hits.push({ ticker, price: last.close.toFixed(2), chg, w4Low: result.w4Low.toFixed(2), w3High: result.w3High.toFixed(2), w5High: result.w5High.toFixed(2), distToW4, isAtW4, date: last.date });
+      }
+    } catch(e) { failed++; }
+
+    await new Promise(r => setTimeout(r, 180));
+  }
+
+  pw.classList.remove('active');
+  const elapsed = ((Date.now() - startTime)/1000).toFixed(0) + 's';
+
+  document.getElementById('summary').classList.add('active');
+  document.getElementById('statHits').textContent   = hits.length;
+  document.getElementById('statTotal').textContent  = tickers.length - failed;
+  document.getElementById('statFailed').textContent = failed;
+  document.getElementById('statTime').textContent   = elapsed;
+  document.getElementById('statusBadge').textContent = 'DONE';
+  document.getElementById('sectionTitle').textContent = `W4 Retest — ${tfLabel} chart  (${hits.length} found)`;
+
+  if (failed > 0) {
+    const eb = document.getElementById('errBox');
+    eb.innerHTML = failed === tickers.length
+      ? `⚠ All requests failed. Proxy may be down. Try refreshing or a different timeframe.`
+      : `ℹ ${failed} tickers failed to load — ${tickers.length - failed} scanned successfully.`;
+    eb.style.display = 'block';
+  }
+
+  const wrap = document.getElementById('resultsWrap');
+  const container = document.getElementById('resultsContainer');
+  wrap.classList.add('active');
+
+  if (hits.length === 0) {
+    container.innerHTML = `<div class="message">No stocks currently retesting W4 low after a completed 5-wave cycle on the ${tfLabel} chart.</div>`;
+  } else {
+    // Sort: stocks AT W4 low first, then by proximity
+    hits.sort((a,b) => parseFloat(a.distToW4) - parseFloat(b.distToW4));
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Price</th>
+            <th>Chg %</th>
+            <th>Status</th>
+            <th>W4 Low — Support</th>
+            <th>W3 High</th>
+            <th>W5 High</th>
+            <th>% Above W4</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${hits.map(r => `
+            <tr>
+              <td class="t-tick"><a href="https://finance.yahoo.com/chart/${r.ticker}" target="_blank">${r.ticker} ↗</a></td>
+              <td class="t-price">$${r.price}</td>
+              <td class="${parseFloat(r.chg)>=0?'t-pos':'t-neg'}">${parseFloat(r.chg)>=0?'+':''}${r.chg}%</td>
+              <td><span class="retest-badge">${r.isAtW4 ? '🔥 AT W4' : 'PULLING BACK'}</span></td>
+              <td class="t-lvl">$<b>${r.w4Low}</b></td>
+              <td class="t-lvl">$<b>${r.w3High}</b></td>
+              <td class="t-lvl">$<b>${r.w5High}</b></td>
+              <td class="${r.isAtW4 ? 'hot' : 't-lvl'}"><b>${r.distToW4}%</b></td>
+              <td class="t-lvl" style="font-size:10px;">${r.date}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  btn.disabled = false; btn.textContent = '▶ SCAN';
+}
+</script>
+</body>
+</html>
