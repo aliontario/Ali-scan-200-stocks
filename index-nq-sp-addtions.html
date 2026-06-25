@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Live Index Addition &amp; Deletion Screener</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f5f3;--bg3:#efefed;
+  --text:#1a1a1a;--text2:#6b6b6b;--text3:#aaa;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --green:#27500A;--green-bg:#EAF3DE;--green-mid:#3B6D11;
+  --red:#791F1F;--red-bg:#FCEBEB;--red-mid:#A32D2D;
+  --blue:#185FA5;--amber:#BA7517;
+  --radius:8px;--radius-lg:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'SF Mono','Fira Code',monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1c1c1e;--bg2:#2a2a2d;--bg3:#111113;
+    --text:#f0f0f0;--text2:#999;--text3:#555;
+    --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+    --green-bg:#1a3a08;--green:#97C459;--green-mid:#97C459;
+    --red-bg:#3a0808;--red:#F09595;--red-mid:#F09595;
+    --blue:#85B7EB;--amber:#EF9F27;
+  }
+}
+body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:100vh}
+.page{max-width:1200px;margin:0 auto;padding:1.5rem 1rem 4rem}
+.header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;padding-bottom:1.25rem;border-bottom:0.5px solid var(--border);margin-bottom:1.25rem}
+.header h1{font-size:22px;font-weight:600;letter-spacing:-0.3px}
+.header p{font-size:13px;color:var(--text2);margin-top:5px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3B6D11;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.timestamp{font-size:12px;color:var(--text3);text-align:right;line-height:2}
+.timestamp a{color:var(--blue);text-decoration:none;font-size:11px}
+.timestamp a:hover{text-decoration:underline}
+.search-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.search-bar input[type=text]{flex:1;min-width:220px;font-size:14px;padding:10px 14px;border-radius:var(--radius-lg);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-family:var(--font)}
+.search-bar input[type=text]:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,0.12)}
+select{font-size:13px;padding:8px 10px;height:40px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-family:var(--font);cursor:pointer}
+button{font-size:13px;padding:8px 16px;height:40px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--font);transition:background .15s}
+button:hover{background:var(--bg2)}
+.btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:500}
+.btn-primary:hover{opacity:.88}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.25rem}
+.metric{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.metric .mlabel{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.metric .mval{font-size:26px;font-weight:600;line-height:1}
+.metric .msub{font-size:11px;color:var(--text3);margin-top:4px}
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1rem}
+.tab{font-size:13px;padding:9px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+.table-wrap{border-radius:var(--radius-lg);border:0.5px solid var(--border);background:var(--bg);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{font-weight:500;font-size:11px;color:var(--text2);padding:9px 12px;text-align:left;background:var(--bg2);border-bottom:0.5px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+tbody td{padding:11px 12px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg2)}
+.ticker{font-weight:700;font-family:var(--mono);font-size:13px;letter-spacing:.5px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;letter-spacing:.3px}
+.badge.add{background:var(--green-bg);color:var(--green)}
+.badge.del{background:var(--red-bg);color:var(--red)}
+.eff-soon{font-size:11px;color:var(--amber);font-weight:600}
+.action-btn{font-size:11px;padding:4px 10px;height:auto;border-radius:var(--radius);border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:var(--font)}
+.action-btn.calls{border-color:var(--green-mid);color:var(--green-mid)}
+.action-btn.short{border-color:var(--red-mid);color:var(--red-mid)}
+.action-btn:hover{background:var(--bg2)}
+.empty-state{text-align:center;padding:4rem 1rem}
+.empty-state .icon{font-size:36px;color:var(--text3);margin-bottom:1rem}
+.empty-state p{color:var(--text2);font-size:14px}
+.empty-state .hint{font-size:12px;color:var(--text3);margin-top:8px}
+.ai-result{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem;display:none}
+.ai-result h3{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:.75rem;display:flex;align-items:center;gap:6px}
+.ai-result pre{font-family:var(--font);font-size:12px;white-space:pre-wrap;line-height:1.7;color:var(--text);max-height:300px;overflow-y:auto}
+.add-form{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1.5rem}
+.add-form h3{font-size:14px;font-weight:500;margin-bottom:1rem;color:var(--text2)}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.form-row input,.form-row select{flex:1;min-width:100px;font-size:13px;padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-family:var(--font)}
+.sources{margin-top:1.5rem;padding:1rem 1.25rem;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg)}
+.sources h4{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem}
+.source-links{display:flex;flex-wrap:wrap;gap:8px}
+.source-link{font-size:12px;padding:5px 12px;border-radius:var(--radius);border:0.5px solid var(--border);color:var(--blue);text-decoration:none;background:var(--bg2);display:inline-flex;align-items:center;gap:5px}
+.source-link:hover{background:var(--bg3)}
+.note{font-size:11px;color:var(--text3);margin-top:.75rem;line-height:1.8}
+.pending-tag{font-size:10px;background:var(--amber);color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px;font-weight:700;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <div>
+    <h1><span class="live-dot"></span>Index addition &amp; deletion screener</h1>
+    <p>Live AI-powered search for S&amp;P 500, Nasdaq-100, Russell &amp; DJIA changes — buy calls on additions, short deletions</p>
+  </div>
+  <div class="timestamp">
+    Last searched: <span id="lastSearched">never</span><br>
+    <a href="https://www.spglobal.com/spdji/en/index-announcements/" target="_blank">S&amp;P announcements ↗</a> &nbsp;
+    <a href="https://slickcharts.com/sp500/changes" target="_blank">SlickCharts ↗</a> &nbsp;
+    <a href="https://indexes.nasdaqomx.com/Index/NewsAndNotices/NDX" target="_blank">Nasdaq notices ↗</a>
+  </div>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="aiQuery" placeholder="e.g. S&P 500 additions 2025, Nasdaq deletions this week..." value="S&P 500 and Nasdaq-100 index additions and deletions announced 2025 pending not yet effective"/>
+  <select id="filterIdx">
+    <option value="all">All indexes</option>
+    <option value="SP500">S&amp;P 500</option>
+    <option value="NDX">Nasdaq-100</option>
+    <option value="RUSSELL">Russell</option>
+    <option value="DJIA">DJIA</option>
+  </select>
+  <select id="filterAct">
+    <option value="all">Adds &amp; deletions</option>
+    <option value="ADD">Additions only</option>
+    <option value="DELETE">Deletions only</option>
+  </select>
+  <button class="btn-primary" id="searchBtn" onclick="liveSearch()">
+    <i class="ti ti-search"></i> Search live
+  </button>
+  <button onclick="exportCSV()"><i class="ti ti-download"></i> Export CSV</button>
+</div>
+
+<div class="ai-result" id="aiResult">
+  <h3><i class="ti ti-robot"></i> Raw AI result &nbsp;<span style="font-size:11px;color:var(--text3);margin-left:auto;cursor:pointer" onclick="document.getElementById('aiResult').style.display='none'">hide ✕</span></h3>
+  <pre id="aiResultText"></pre>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="mlabel">Pending additions</div><div class="mval" id="mAdd">—</div><div class="msub">announced, not yet effective</div></div>
+  <div class="metric"><div class="mlabel">Pending deletions</div><div class="mval" id="mDel">—</div><div class="msub">announced, not yet effective</div></div>
+  <div class="metric"><div class="mlabel">Effective this week</div><div class="mval" id="mSoon">—</div><div class="msub">act fast</div></div>
+  <div class="metric"><div class="mlabel">Total tracked</div><div class="mval" id="mTotal">—</div><div class="msub">all entries</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="setTab('all',this)">All changes</div>
+  <div class="tab" onclick="setTab('ADD',this)">Additions <span id="addCount" style="font-size:11px;opacity:.6"></span></div>
+  <div class="tab" onclick="setTab('DELETE',this)">Deletions <span id="delCount" style="font-size:11px;opacity:.6"></span></div>
+  <div class="tab" onclick="setTab('PENDING',this)">⚡ Pending only <span id="pendCount" style="font-size:11px;opacity:.6"></span></div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Ticker</th>
+        <th>Company</th>
+        <th>Index</th>
+        <th>Action</th>
+        <th>Replacing / replaced by</th>
+        <th>Announced</th>
+        <th>Effective date</th>
+        <th>Days left</th>
+        <th>Notes</th>
+        <th>Strategy</th>
+        <th>Links</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="11">
+        <div class="empty-state">
+          <div class="icon"><i class="ti ti-search"></i></div>
+          <p>Click <strong>Search live</strong> to fetch today's index changes</p>
+          <div class="hint">The AI will search the web for the latest announcements and add them automatically</div>
+        </div>
+      </td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="add-form">
+  <h3><i class="ti ti-plus"></i> Add entry manually</h3>
+  <div class="form-row">
+    <input type="text" id="fTicker" placeholder="Ticker (e.g. MRVL)" style="max-width:110px;text-transform:uppercase"/>
+    <input type="text" id="fCompany" placeholder="Company name"/>
+    <select id="fIndex"><option value="SP500">S&amp;P 500</option><option value="NDX">Nasdaq-100</option><option value="RUSSELL">Russell</option><option value="DJIA">DJIA</option></select>
+    <select id="fAction"><option value="ADD">Addition</option><option value="DELETE">Deletion</option></select>
+  </div>
+  <div class="form-row">
+    <input type="text" id="fReplacing" placeholder="Replacing / replaced by"/>
+    <input type="text" id="fSector" placeholder="Sector"/>
+    <input type="date" id="fAnnounced"/>
+    <input type="date" id="fEffective"/>
+  </div>
+  <div class="form-row">
+    <input type="text" id="fNote" placeholder="Notes (optional)" style="flex:2"/>
+    <button class="btn-primary" onclick="addEntry()"><i class="ti ti-check"></i> Add</button>
+    <button onclick="clearCustom()" style="color:var(--red-mid);border-color:var(--red-mid)"><i class="ti ti-trash"></i> Clear custom</button>
+  </div>
+</div>
+
+<div class="sources">
+  <h4>Daily sources to monitor</h4>
+  <div class="source-links">
+    <a class="source-link" href="https://www.spglobal.com/spdji/en/index-announcements/" target="_blank"><i class="ti ti-external-link"></i> S&amp;P Global announcements</a>
+    <a class="source-link" href="https://slickcharts.com/sp500/changes" target="_blank"><i class="ti ti-external-link"></i> SlickCharts S&amp;P changes</a>
+    <a class="source-link" href="https://indexes.nasdaqomx.com/Index/NewsAndNotices/NDX" target="_blank"><i class="ti ti-external-link"></i> Nasdaq-100 notices</a>
+    <a class="source-link" href="https://www.ftserussell.com/resources/russell-reconstitution" target="_blank"><i class="ti ti-external-link"></i> Russell reconstitution</a>
+    <a class="source-link" href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies" target="_blank"><i class="ti ti-external-link"></i> Wikipedia S&amp;P 500</a>
+    <a class="source-link" href="https://finance.yahoo.com/quote/%5EGSPC/components/" target="_blank"><i class="ti ti-external-link"></i> Yahoo Finance S&amp;P</a>
+  </div>
+  <div class="note">
+    <strong>How to trade index changes:</strong> Announcement comes out after market close → effective date is ~5 trading days later → passive ETFs (SPY, QQQ) are forced to buy additions and sell deletions on that date → the move happens in those 5 days.<br>
+    Buy calls on additions right after announcement. Short or buy puts on deletions. Additions typically move +3–10%, deletions –5–15% in that window. Data is saved in your browser and persists across sessions.
+  </div>
+</div>
+
+</div>
+
+<script>
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+let activeTab = 'all';
+
+const BUILTIN = [
+  {ticker:'MRVL',company:'Marvell Technology',index:'SP500',action:'ADD',replacing:'Celanese (CE)',announced:'2024-12-06',effective:'2024-12-23',sector:'Semiconductors',note:'Surged ~10% post-announcement. Classic add catalyst.',custom:false},
+  {ticker:'AXON',company:'Axon Enterprise',index:'SP500',action:'ADD',replacing:'Hasbro',announced:'2024-12-13',effective:'2024-12-23',sector:'Defense Tech',note:'Same Dec rebalance as MRVL',custom:false},
+  {ticker:'APP',company:'Applovin Corp',index:'NDX',action:'ADD',replacing:'Illumina',announced:'2024-12-06',effective:'2024-12-23',sector:'Ad Tech',note:'NDX annual rebalance',custom:false},
+  {ticker:'PLTR',company:'Palantir Technologies',index:'NDX',action:'ADD',replacing:'Super Micro',announced:'2024-12-06',effective:'2024-12-23',sector:'AI/Data',note:'NDX annual rebalance',custom:false},
+  {ticker:'SMCI',company:'Super Micro Computer',index:'NDX',action:'DELETE',replacing:'Replaced by PLTR',announced:'2024-12-06',effective:'2024-12-23',sector:'Servers',note:'Removed — delayed financials filing',custom:false},
+  {ticker:'CE',company:'Celanese Corp',index:'SP500',action:'DELETE',replacing:'Replaced by MRVL',announced:'2024-12-06',effective:'2024-12-23',sector:'Chemicals',note:'Dropped -12% after announcement',custom:false},
+  {ticker:'CRWD',company:'CrowdStrike Holdings',index:'SP500',action:'ADD',replacing:'Solera Holdings',announced:'2024-06-24',effective:'2024-07-01',sector:'Cybersecurity',note:'',custom:false},
+  {ticker:'KKR',company:'KKR & Co.',index:'SP500',action:'ADD',replacing:'Robert Half',announced:'2024-09-06',effective:'2024-09-23',sector:'Financials',note:'+6.5% in 3 days post-announcement',custom:false},
+  {ticker:'DELL',company:'Dell Technologies',index:'SP500',action:'ADD',replacing:'Etsy',announced:'2024-09-13',effective:'2024-09-23',sector:'Hardware',note:'+7% catalyst after re-listing',custom:false},
+  {ticker:'ETSY',company:'Etsy Inc.',index:'SP500',action:'DELETE',replacing:'Replaced by DELL',announced:'2024-09-13',effective:'2024-09-23',sector:'E-commerce',note:'Fell -8% in 3 days',custom:false},
+  {ticker:'VST',company:'Vistra Corp',index:'SP500',action:'ADD',replacing:'Lincoln National',announced:'2024-10-18',effective:'2024-10-23',sector:'Power/Energy',note:'AI data center power demand thesis',custom:false},
+  {ticker:'COIN',company:'Coinbase Global',index:'SP500',action:'ADD',replacing:'Discover Financial',announced:'2025-05-09',effective:'2025-05-19',sector:'Crypto/Fintech',note:'First pure-play crypto in S&P 500',custom:false},
+  {ticker:'DFS',company:'Discover Financial',index:'SP500',action:'DELETE',replacing:'Replaced by COIN',announced:'2025-05-09',effective:'2025-05-19',sector:'Financials',note:'Removed — Capital One acquisition',custom:false},
+  {ticker:'ARM',company:'Arm Holdings',index:'NDX',action:'ADD',replacing:'Zoom Video',announced:'2024-06-24',effective:'2024-07-01',sector:'Semiconductors',note:'Post-add surge after Nasdaq listing',custom:false},
+];
+
+function loadCustom(){try{return JSON.parse(localStorage.getItem('idx_screener_v2')||'[]')}catch(e){return[]}}
+function saveCustom(a){localStorage.setItem('idx_screener_v2',JSON.stringify(a));localStorage.setItem('idx_screener_ts',new Date().toLocaleString())}
+function allData(){return[...BUILTIN,...loadCustom()]}
+function daysLeft(s){const d=new Date(s);d.setHours(0,0,0,0);return Math.round((d-TODAY)/86400000)}
+function isPending(r){return daysLeft(r.effective)>0}
+
+function filtered(){
+  const idx=document.getElementById('filterIdx').value;
+  const act=document.getElementById('filterAct').value;
+  return allData().filter(r=>{
+    if(activeTab==='ADD'&&r.action!=='ADD')return false;
+    if(activeTab==='DELETE'&&r.action!=='DELETE')return false;
+    if(activeTab==='PENDING'&&!isPending(r))return false;
+    if(idx!=='all'&&r.index!==idx)return false;
+    if(act!=='all'&&r.action!==act)return false;
+    return true;
+  });
+}
+
+function setTab(t,el){
+  activeTab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function render(){
+  const data=allData();
+  const rows=filtered();
+  const adds=data.filter(r=>r.action==='ADD'&&isPending(r));
+  const dels=data.filter(r=>r.action==='DELETE'&&isPending(r));
+  const soon=data.filter(r=>{const d=daysLeft(r.effective);return d>0&&d<=7});
+  const pending=data.filter(r=>isPending(r));
+
+  document.getElementById('mAdd').textContent=adds.length;
+  document.getElementById('mDel').textContent=dels.length;
+  document.getElementById('mSoon').textContent=soon.length;
+  document.getElementById('mTotal').textContent=data.length;
+  document.getElementById('addCount').textContent=data.filter(r=>r.action==='ADD').length?`(${data.filter(r=>r.action==='ADD').length})`:'';
+  document.getElementById('delCount').textContent=data.filter(r=>r.action==='DELETE').length?`(${data.filter(r=>r.action==='DELETE').length})`:'';
+  document.getElementById('pendCount').textContent=pending.length?`(${pending.length})`:'';
+
+  const body=document.getElementById('tableBody');
+  if(!rows.length){
+    body.innerHTML='<tr><td colspan="11"><div class="empty-state"><div class="icon"><i class="ti ti-filter-off"></i></div><p>No results match your filters</p></div></td></tr>';
+    return;
+  }
+
+  const sorted=[...rows].sort((a,b)=>new Date(b.announced)-new Date(a.announced));
+  body.innerHTML=sorted.map(r=>{
+    const isAdd=r.action==='ADD';
+    const dl=daysLeft(r.effective);
+    let daysCell='';
+    if(dl>0&&dl<=5) daysCell=`<span class="eff-soon">⚡ ${dl}d left</span>`;
+    else if(dl>5) daysCell=`<span style="font-size:12px;color:var(--text2)">${dl}d</span>`;
+    else daysCell=`<span style="font-size:11px;color:var(--text3)">done</span>`;
+
+    const pendTag=isPending(r)?`<span class="pending-tag">PENDING</span>`:'';
+    const delBtn=r.custom?`<button class="action-btn" style="font-size:10px;padding:2px 6px;margin-left:4px;color:var(--red-mid);border-color:var(--red-mid)" onclick="deleteEntry('${r.ticker}','${r.announced}')">✕</button>`:'';
+    const stratBtn=isAdd
+      ?`<button class="action-btn calls" onclick="window.open('https://finance.yahoo.com/quote/${r.ticker}/options','_blank')"><i class="ti ti-trending-up"></i> Calls</button>`
+      :`<button class="action-btn short" onclick="window.open('https://finance.yahoo.com/quote/${r.ticker}/options','_blank')"><i class="ti ti-trending-down"></i> Puts/short</button>`;
+
+    return`<tr>
+      <td><span class="ticker">${r.ticker}</span>${delBtn}</td>
+      <td>${r.company}${pendTag}<br><span style="font-size:11px;color:var(--text2)">${r.sector||''}</span></td>
+      <td><span style="font-size:12px;font-weight:600">${r.index}</span></td>
+      <td><span class="badge ${isAdd?'add':'del'}">${isAdd?'▲ ADD':'▼ DEL'}</span></td>
+      <td style="font-size:12px;color:var(--text2);max-width:130px">${r.replacing||'—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${r.announced}</td>
+      <td style="font-size:12px;white-space:nowrap">${r.effective}</td>
+      <td style="text-align:center">${daysCell}</td>
+      <td style="font-size:12px;color:var(--text2);max-width:180px">${r.note||'—'}</td>
+      <td>${stratBtn}</td>
+      <td style="white-space:nowrap">
+        <a href="https://finance.yahoo.com/quote/${r.ticker}" target="_blank" style="font-size:12px;color:var(--blue);margin-right:6px">Yahoo</a>
+        <a href="https://www.marketwatch.com/investing/stock/${r.ticker.toLowerCase()}" target="_blank" style="font-size:12px;color:var(--blue)">MW</a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function liveSearch(){
+  const btn=document.getElementById('searchBtn');
+  const query=document.getElementById('aiQuery').value.trim()||'S&P 500 Nasdaq-100 index additions deletions 2025 pending';
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"><i class="ti ti-refresh"></i></span> Searching web...';
+
+  const today=new Date().toISOString().slice(0,10);
+  const prompt=`Today is ${today}. Search the web for the most recent S&P 500 and Nasdaq-100 index additions and deletions. Focus on changes that have been ANNOUNCED but NOT YET EFFECTIVE (still pending). Also include very recent ones from the last 30 days.
+
+User query: "${query}"
+
+Return ONLY a raw JSON array — no markdown, no backticks, no explanation before or after. Each object must have exactly these fields:
+ticker (string), company (string), index (one of: SP500, NDX, RUSSELL, DJIA), action (ADD or DELETE), replacing (string, who they replace or are replaced by), announced (YYYY-MM-DD), effective (YYYY-MM-DD), sector (string), note (string with any useful trading context)
+
+Search multiple sources. Return all you find. Raw JSON array only.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const fullText=(data.content||[]).map(b=>b.type==='text'?b.text:'').filter(Boolean).join('\n');
+
+    document.getElementById('aiResultText').textContent=fullText||'(no text response)';
+    document.getElementById('aiResult').style.display='block';
+
+    const jsonMatch=fullText.match(/\[[\s\S]*?\]/);
+    if(jsonMatch){
+      let parsed;
+      try{parsed=JSON.parse(jsonMatch[0])}catch(e){parsed=null}
+      if(parsed&&Array.isArray(parsed)&&parsed.length){
+        const custom=loadCustom();
+        let added=0;
+        parsed.forEach(r=>{
+          if(!r.ticker||!r.announced)return;
+          r.ticker=String(r.ticker).toUpperCase().trim();
+          r.custom=true;
+          const exists=[...BUILTIN,...custom].some(x=>x.ticker===r.ticker&&x.announced===r.announced);
+          if(!exists){custom.push(r);added++}
+        });
+        saveCustom(custom);
+        document.getElementById('lastSearched').textContent=new Date().toLocaleString();
+        render();
+        if(added>0){
+          alert(`Added ${added} new entr${added===1?'y':'ies'} from live search! Check the Pending tab.`);
+        } else {
+          alert('Search complete — no new entries beyond what is already tracked. Check the raw result above.');
+        }
+      } else {
+        document.getElementById('lastSearched').textContent=new Date().toLocaleString();
+        alert('Search ran but could not parse structured results. Check the raw AI result above and add any new tickers manually.');
+      }
+    } else {
+      document.getElementById('lastSearched').textContent=new Date().toLocaleString();
+      alert('Search complete. Check the raw AI result above for any new announcements and add them manually below.');
+    }
+  } catch(err){
+    alert('Search error: '+err.message+'\n\nMake sure you are viewing this page on GitHub Pages (not just opening the file locally).');
+  } finally{
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-search"></i> Search live';
+  }
+}
+
+function addEntry(){
+  const ticker=document.getElementById('fTicker').value.trim().toUpperCase();
+  const company=document.getElementById('fCompany').value.trim();
+  const announced=document.getElementById('fAnnounced').value;
+  const effective=document.getElementById('fEffective').value;
+  if(!ticker||!company||!announced||!effective){alert('Ticker, company, announced date, and effective date are required.');return}
+  const custom=loadCustom();
+  custom.unshift({ticker,company,index:document.getElementById('fIndex').value,action:document.getElementById('fAction').value,replacing:document.getElementById('fReplacing').value.trim(),sector:document.getElementById('fSector').value.trim(),announced,effective,note:document.getElementById('fNote').value.trim(),custom:true});
+  saveCustom(custom);
+  ['fTicker','fCompany','fReplacing','fSector','fAnnounced','fEffective','fNote'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+function deleteEntry(ticker,announced){
+  const custom=loadCustom();
+  const idx=custom.findIndex(c=>c.ticker===ticker&&c.announced===announced);
+  if(idx>-1){custom.splice(idx,1);saveCustom(custom);render()}
+}
+
+function clearCustom(){
+  if(confirm('Remove all custom and AI-fetched entries?')){localStorage.removeItem('idx_screener_v2');render()}}
+
+function exportCSV(){
+  const rows=filtered();
+  const hdr='Ticker,Company,Index,Action,Replacing,Announced,Effective,DaysLeft,Sector,Note,Pending';
+  const lines=rows.map(r=>[r.ticker,`"${r.company}"`,r.index,r.action,`"${r.replacing||''}"`,r.announced,r.effective,daysLeft(r.effective),r.sector||'',`"${r.note||''}"`,isPending(r)?'YES':'NO'].join(','));
+  const blob=new Blob([[hdr,...lines].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`index_changes_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+['filterIdx','filterAct'].forEach(id=>document.getElementById(id).addEventListener('change',render));
+const ts=localStorage.getItem('idx_screener_ts');
+if(ts)document.getElementById('lastSearched').textContent=ts;
+render();
+</script>
+</body>
+</html>
