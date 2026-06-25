@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elliott Wave — Bearish W4 Screener | S&P500 + Nasdaq100</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --bg:#0a0e17; --surface:#111827; --border:#1e2d40;
+    --blue:#1d6fa4; --blue-glow:#2a9fd6; --green:#00c896;
+    --red:#ff4d6d; --amber:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+    --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .logo { font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.15em; color:var(--red); text-transform:uppercase; }
+  .logo span { color:var(--muted); font-weight:400; }
+  .header-pills { display:flex; gap:8px; }
+  .pill { font-family:var(--mono); font-size:10px; padding:3px 10px; border-radius:20px; letter-spacing:0.08em; }
+  .pill-red  { border:1px solid var(--red);  color:var(--red); }
+  .pill-blue { border:1px solid var(--blue-glow); color:var(--blue-glow); }
+  main { padding:28px 32px; max-width:1300px; margin:0 auto; }
+
+  .strategy-box { background:#1f0d0d; border:1px solid #4a1a1a; border-radius:8px; padding:14px 18px; margin-bottom:20px; font-family:var(--mono); font-size:11px; color:#f87171; line-height:2; }
+  .strategy-box strong { color:#fca5a5; }
+  .rules { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .rule { background:#1a0a0a; border:1px solid #3a1a1a; border-radius:4px; padding:6px 10px; font-size:10px; color:#fca5a5; }
+
+  .index-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab { font-family:var(--mono); font-size:11px; padding:6px 14px; border-radius:6px; border:1px solid var(--border); color:var(--muted); cursor:pointer; background:var(--surface); transition:all 0.15s; }
+  .tab:hover,.tab.active { border-color:var(--red); color:var(--red); background:#1a0d0d; }
+
+  .controls { display:grid; grid-template-columns:1fr 140px 140px auto auto; gap:12px; margin-bottom:24px; align-items:end; }
+  @media(max-width:900px){ .controls{ grid-template-columns:1fr 1fr; } }
+  .field label { display:block; font-size:11px; font-family:var(--mono); color:var(--muted); letter-spacing:0.1em; margin-bottom:6px; text-transform:uppercase; }
+  textarea,select { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:var(--mono); font-size:11px; padding:10px 12px; border-radius:6px; outline:none; }
+  textarea { resize:vertical; min-height:64px; }
+  textarea:focus,select:focus { border-color:var(--red); }
+  .btn { border:none; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:0.1em; padding:12px 18px; border-radius:6px; cursor:pointer; text-transform:uppercase; white-space:nowrap; height:fit-content; transition:background 0.2s; }
+  .btn-scan { background:#7f1d1d; color:#fff; }
+  .btn-scan:hover { background:var(--red); }
+  .btn-pause { background:#2a1f00; color:var(--amber); border:1px solid var(--amber); display:none; }
+  .btn-pause:hover { background:#3a2f00; }
+  .btn:disabled { background:var(--muted); color:#888; cursor:not-allowed; }
+
+  .progress-wrap { display:none; margin-bottom:20px; }
+  .progress-wrap.active { display:block; }
+  .progress-bar-bg { background:var(--surface); border:1px solid var(--border); border-radius:4px; height:8px; overflow:hidden; margin-bottom:8px; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg,#7f1d1d,var(--red)); width:0%; transition:width 0.25s; border-radius:4px; }
+  .progress-text { font-family:var(--mono); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+
+  .summary { display:none; gap:12px; margin-bottom:24px; }
+  .summary.active { display:flex; flex-wrap:wrap; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 20px; flex:1; min-width:100px; }
+  .stat-card .val { font-family:var(--mono); font-size:20px; font-weight:700; line-height:1; margin-bottom:4px; }
+  .stat-card .lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; }
+  .stat-card.red   { border-color:var(--red); }   .stat-card.red .val   { color:var(--red); }
+  .stat-card.blue  { border-color:var(--blue-glow); } .stat-card.blue .val  { color:var(--blue-glow); }
+  .stat-card.amber { border-color:var(--amber); } .stat-card.amber .val { color:var(--amber); }
+  .stat-card.green { border-color:var(--green); } .stat-card.green .val { color:var(--green); }
+
+  .err-box { background:#1a0a0a; border:1px solid var(--red); border-radius:6px; padding:12px 16px; font-family:var(--mono); font-size:11px; color:var(--red); margin-bottom:16px; display:none; line-height:1.7; }
+  .results-wrap { display:none; }
+  .results-wrap.active { display:block; }
+  .section-title { font-family:var(--mono); font-size:11px; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead tr { border-bottom:1px solid var(--border); }
+  th { font-family:var(--mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); padding:8px 12px; text-align:left; font-weight:400; }
+  tbody tr { border-bottom:1px solid #151e2e; transition:background 0.1s; }
+  tbody tr:hover { background:#1a1212; }
+  td { padding:11px 12px; vertical-align:middle; }
+  .t-tick { font-family:var(--mono); font-weight:700; font-size:14px; }
+  .t-tick a { color:var(--red); text-decoration:none; }
+  .t-tick a:hover { text-decoration:underline; }
+  .t-price { font-family:var(--mono); font-weight:600; }
+  .t-pos { color:var(--green); font-family:var(--mono); font-size:12px; }
+  .t-neg { color:var(--red); font-family:var(--mono); font-size:12px; }
+  .at-w4-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-family:var(--mono); font-size:10px; font-weight:700; background:#2a0d0d; border:1px solid var(--red); color:var(--red); }
+  .t-lvl { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .t-lvl b { color:var(--text); font-weight:600; }
+  .hot { color:var(--amber) !important; font-weight:700; }
+  .idx-tag { font-family:var(--mono); font-size:9px; padding:2px 6px; border-radius:3px; margin-left:4px; }
+  .idx-sp  { background:#0d1a2a; color:var(--blue-glow); border:1px solid #1a3a5a; }
+  .idx-ndx { background:#0d2a1a; color:var(--green);     border:1px solid #1a4a2a; }
+  .message { font-family:var(--mono); font-size:12px; color:var(--muted); padding:40px; text-align:center; border:1px dashed var(--border); border-radius:8px; }
+  .footnote { margin-top:28px; font-size:11px; color:var(--muted); font-family:var(--mono); line-height:1.9; }
+  .ticker-count { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .ticker-count b { color:var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Elliott Wave <span>// </span>Bearish W4 Retest</div>
+  <div class="header-pills">
+    <div class="pill pill-blue" id="statusBadge">READY</div>
+  </div>
+</header>
+<main>
+
+  <div class="strategy-box">
+    <strong>Bearish Strategy:</strong> W1↓ → W2↑ → W3↓ → W4↑ → <strong>W5 confirmed (close BELOW W3 low)</strong> → price bounces back UP to W4 high zone → <strong>SHORT the retest</strong>
+    <div class="rules">
+      <div class="rule">W1 — Bearish engulfing after green candles OR two red candles (2nd closes below wick of 1st)</div>
+      <div class="rule">W2 — Bounce UP, must NOT close above HIGH of W1's key candle</div>
+      <div class="rule">W3 — Stronger bearish push, same formations as W1</div>
+      <div class="rule">W4 — Bounce UP, must NOT close above HIGH of W3's key candle</div>
+      <div class="rule">W5 — Confirmed when price closes BELOW W3 low</div>
+      <div class="rule">SHORT ENTRY — W5 complete, price bounces back to W4 high = resistance zone</div>
+    </div>
+  </div>
+
+  <div class="err-box" id="errBox"></div>
+
+  <!-- Index selector tabs -->
+  <div class="index-tabs">
+    <div class="tab active" onclick="loadIndex('sp500')">S&P 500 (503 stocks)</div>
+    <div class="tab" onclick="loadIndex('nasdaq100')">Nasdaq 100 (101 stocks)</div>
+    <div class="tab" onclick="loadIndex('both')">Both Combined (550 unique)</div>
+    <div class="tab" onclick="loadIndex('custom')">Custom List</div>
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <div class="ticker-count" id="tickerCount"><b>503</b> tickers loaded — S&P 500</div>
+      <textarea id="tickerInput" rows="3"></textarea>
+    </div>
+    <div class="field">
+      <label>Timeframe</label>
+      <select id="intervalSelect">
+        <option value="1h">Hourly (1H)</option>
+        <option value="4h">4 Hour (4H)</option>
+        <option value="1d" selected>Daily (1D)</option>
+        <option value="1wk">Weekly (1W)</option>
+        <option value="1mo">Monthly (1M)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>W4 Tolerance %</label>
+      <select id="toleranceSelect">
+        <option value="1">1% — Very tight</option>
+        <option value="2" selected>2% — Tight</option>
+        <option value="3">3% — Normal</option>
+        <option value="5">5% — Loose</option>
+      </select>
+    </div>
+    <button class="btn btn-scan" id="scanBtn" onclick="startScan()">▶ SCAN</button>
+    <button class="btn btn-pause" id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-text">
+      <span id="progressText">Initializing...</span>
+      <span id="progressPct">0%</span>
+    </div>
+  </div>
+
+  <div class="summary" id="summary">
+    <div class="stat-card red"><div class="val" id="statHits">—</div><div class="lbl">AT W4 High</div></div>
+    <div class="stat-card blue"><div class="val" id="statTotal">—</div><div class="lbl">Scanned</div></div>
+    <div class="stat-card amber"><div class="val" id="statSkipped">—</div><div class="lbl">No Setup</div></div>
+    <div class="stat-card"><div class="val" id="statFailed">—</div><div class="lbl">Failed</div></div>
+    <div class="stat-card green"><div class="val" id="statTime">—</div><div class="lbl">Scan Time</div></div>
+  </div>
+
+  <div class="results-wrap" id="resultsWrap">
+    <div class="section-title" id="sectionTitle">Stocks retesting W4 high after bearish 5-wave cycle</div>
+    <div id="resultsContainer"></div>
+  </div>
+
+  <div class="footnote">
+    Data: Yahoo Finance · S&P 500 + Nasdaq 100 · Bearish Elliott Wave · W5 confirmed below W3 low ·
+    Price retesting W4 high as resistance · Only stocks AT W4 high within tolerance · Sorted by proximity
+  </div>
+</main>
+
+<script>
+// ── Full S&P 500 ticker list ──
+const SP500 = ['NVDA','GOOGL','GOOG','AAPL','MSFT','AMZN','AVGO','META','TSLA','WMT','BRK.B','LLY','JPM','MU','AMD','XOM','V','JNJ','INTC','ORCL','COST','CSCO','MA','CAT','CVX','NFLX','ABBV','BAC','UNH','KO','LRCX','PG','AMAT','PLTR','MS','HD','PM','GE','GS','MRK','TXN','GEV','RTX','LIN','KLAC','WFC','QCOM','AXP','IBM','C','TMUS','ADI','PEP','PANW','MCD','VZ','NEE','DIS','ANET','BLK','AMGN','BA','T','TJX','APP','TMO','UNP','GILD','SCHW','CRWD','ISRG','DELL','ABT','UBER','DE','COP','WELL','APH','ETN','CRM','PFE','BX','HON','PLD','VRT','CB','SPGI','MO','CVS','LOW','LMT','SBUX','BKNG','SYK','PGR','NEM','BMY','COF','DHR','INTU','VRTX','CME','ACN','PWR','PH','NOW','SO','EQIX','ADBE','HWM','TT','AON','MMC','CI','BSX','REGN','USB','AMT','TDG','APO','WELL','MCO','SHW','FCX','ICE','HCA','GD','NOC','FI','EMR','CTAS','MMM','AIG','PNC','MDLZ','SNPS','CDNS','MSI','ECL','CEG','WM','ITW','EOG','OXY','CL','TGT','MCK','MPC','AFL','NSC','AMP','TFC','SRE','DUK','PSA','SPG','PCAR','CARR','F','GM','BDX','EW','FICO','ORLY','HES','PSX','AEP','VLO','D','PCG','PAYX','FAST','KMB','FDX','MAR','COO','RSG','CTSH','MCHP','ON','ADSK','HLT','CMI','NXPI','KEYS','IDXX','A','VRSK','CSGP','IQV','ZTS','PRU','MSCI','ANSS','BR','MNST','FTNT','EA','DXCM','EFX','GIS','XEL','AZO','KR','WBD','NUE','EBAY','APTV','HPE','HPQ','KDP','IP','HAL','DVN','FANG','MKC','BALL','ARE','O','EXR','AVB','WEC','CCI','DLR','EVRG','ATO','LNT','PPL','CNP','NI','FE','ETR','EIX','AWK','WTW','TROW','RF','HBAN','KEY','CFG','FITB','MTB','CMA','ZION','PBCT','NTRS','STT','BK','CINF','L','GL','PFG','AIZ','RJF','CBOE','NDAQ','IVZ','BEN','FRT','REG','ESS','MAA','UDR','CPT','EQR','PEG','NRG','OGE','IDA','NFG','SR','UGI','SWX','NWE','AVA','POR','OTTR','SJW','CTL','LUMN','FTR','WIN','TDS','USM','CBT','OLN','EMN','CE','FMC','CF','MOS','NTR','IFF','PPG','RPM','AXTA','HUN','TROX','CC','KWR','GRA','APD','LYB','DD','DOW','CTVA','FUL','H','PKG','SEE','SON','CLX','CHD','HRL','CAG','SJM','MKC','CPB','GIS','HSY','K','POST','JBLU','UAL','DAL','ALK','LUV','AAL','ULTA','ROST','TJX','GPS','PVH','RL','TPR','HBI','VFC','NKE','DECK','SKX','WWW','FL','BOOT','CROX','LULU','UAA','UA','AEO','ANF','URBN','EXPR','GIL','MOV'];
+
+// ── Nasdaq 100 ticker list ──
+const NASDAQ100 = ['NVDA','AAPL','MSFT','AMZN','GOOGL','GOOG','META','TSLA','AVGO','COST','NFLX','AMD','CSCO','ADBE','INTC','QCOM','AMGN','TMUS','TXN','INTU','ISRG','AMAT','BKNG','HON','VRTX','PANW','ADP','SBUX','LRCX','GILD','MU','KLAC','CRWD','SNPS','CDNS','REGN','MELI','MDLZ','KDP','CTAS','ORLY','ABNB','PYPL','MCHP','NXPI','WDAY','PCAR','FAST','IDXX','MNST','DXCM','FTNT','ROP','CHTR','PAYX','VRSK','CPRT','BIIB','DLTR','GEHC','ON','EXC','CTSH','FANG','ODFL','CEG','ZS','CSGP','TEAM','ANSS','DDOG','SIRI','ALGN','TTWO','ILMN','ENPH','ZM','LCID','JD','WBA','RIVN','MTCH','COIN','ROKU','LYFT','DOCU','OKTA','CRSP','NTAP','ZBRA','FFIV','POOL','PDD','ASML','LULU','EBAY','MRVL','DASH','TTD','SNOW','PLTR','APP','ANET'];
+
+// ── Combined unique list ──
+const BOTH = [...new Set([...SP500, ...NASDAQ100])];
+
+// Track which index each ticker belongs to
+const SP500_SET    = new Set(SP500);
+const NASDAQ100_SET = new Set(NASDAQ100);
+
+function getIndexTag(ticker) {
+  const inSP  = SP500_SET.has(ticker);
+  const inNDX = NASDAQ100_SET.has(ticker);
+  if (inSP && inNDX) return '<span class="idx-tag idx-sp">S&P</span><span class="idx-tag idx-ndx">NDX</span>';
+  if (inSP)  return '<span class="idx-tag idx-sp">S&P</span>';
+  if (inNDX) return '<span class="idx-tag idx-ndx">NDX</span>';
+  return '';
+}
+
+function loadIndex(type) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  let list, label;
+  if (type === 'sp500')     { list = SP500;     label = `<b>${SP500.length}</b> tickers loaded — S&P 500`; }
+  if (type === 'nasdaq100') { list = NASDAQ100; label = `<b>${NASDAQ100.length}</b> tickers loaded — Nasdaq 100`; }
+  if (type === 'both')      { list = BOTH;      label = `<b>${BOTH.length}</b> tickers loaded — S&P 500 + Nasdaq 100 combined`; }
+  if (type === 'custom')    { document.getElementById('tickerInput').value = ''; document.getElementById('tickerCount').innerHTML = 'Enter your own tickers below'; return; }
+  document.getElementById('tickerInput').value = list.join(', ');
+  document.getElementById('tickerCount').innerHTML = label;
+}
+
+// Load S&P 500 by default
+window.onload = () => loadIndex('sp500');
+
+// ── BEARISH Elliott Wave Detection ──
+function detectBearishSetup(candles) {
+  let state = 0;
+  let w1KeyHigh = null, w3Low = null, w3KeyHigh = null, w4High = null, w5Low = null;
+
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i], p = candles[i-1];
+    const g0 = c.close > c.open, g1 = p.close > p.open;
+    const r0 = c.close < c.open, r1 = p.close < p.open;
+
+    // Bearish formations
+    const bearEngulf  = r0 && g1 && c.close < p.open && c.open > p.close;
+    const twoRed      = r0 && r1 && c.close < p.low;
+    const isBearish   = bearEngulf || twoRed;
+    const bearKeyHigh = bearEngulf ? c.high : twoRed ? p.high : null;
+
+    // Bullish formations (W2, W4 bounces)
+    const bullEngulf  = g0 && r1 && c.close > p.open && c.open < p.close;
+    const twoGreen    = g0 && g1 && c.close > p.high;
+    const isBullish   = bullEngulf || twoGreen;
+    const bullKeyHigh = bullEngulf ? c.high : twoGreen ? p.high : null;
+
+    if (state === 0 && isBearish) {
+      state = 1; w1KeyHigh = bearKeyHigh;
+
+    } else if (state === 1 && isBullish) {
+      if (c.close <= w1KeyHigh) state = 2;
+      else { state = 0; w1KeyHigh = null; }
+
+    } else if (state === 2 && isBearish) {
+      state = 3; w3Low = Math.min(c.low, p.low); w3KeyHigh = bearKeyHigh;
+
+    } else if (state === 3 && isBullish) {
+      if (c.close <= w3KeyHigh) { state = 4; w4High = bullKeyHigh; }
+      else { state = 0; w1KeyHigh = w3Low = w3KeyHigh = null; }
+
+    } else if (state === 4) {
+      if (c.close < w3Low) { state = 5; w5Low = c.low; }
+      else if (w3KeyHigh && c.close > w3KeyHigh) { state = 0; w1KeyHigh = w3Low = w3KeyHigh = w4High = null; }
+
+    } else if (state === 5) {
+      if (c.low < w5Low) w5Low = c.low;
+      if (c.close > w3Low) state = 6;
+
+    } else if (state === 6) {
+      if (w4High && c.close > w4High * 1.03) { state = 0; w1KeyHigh = w3Low = w3KeyHigh = w4High = w5Low = null; }
+      else if (w5Low && c.close < w5Low)      { state = 0; w1KeyHigh = w3Low = w3KeyHigh = w4High = w5Low = null; }
+    }
+  }
+  return (state === 6 && w4High !== null) ? { w4High, w3Low, w5Low } : null;
+}
+
+// ── Fetch candles ──
+async function fetchCandles(ticker, interval) {
+  const range = interval === '1h' ? '7d' : interval === '4h' ? '60d' : interval === '1d' ? '6mo' : interval === '1wk' ? '2y' : '5y';
+  const yUrl  = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=${interval}&range=${range}`;
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(yUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yUrl)}`
+  ];
+  for (const px of proxies) {
+    try {
+      const res = await fetch(px, { signal: AbortSignal.timeout(9000) });
+      if (!res.ok) continue;
+      const raw = await res.json();
+      const parsed = raw.contents ? JSON.parse(raw.contents) : raw;
+      const result = parsed?.chart?.result?.[0];
+      if (!result) continue;
+      const ts = result.timestamp, q = result.indicators.quote[0];
+      const candles = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (q.open[i] != null && q.close[i] != null)
+          candles.push({ date: new Date(ts[i]*1000).toLocaleDateString(), open: q.open[i], high: q.high[i], low: q.low[i], close: q.close[i] });
+      }
+      if (candles.length > 5) return candles;
+    } catch(e) { continue; }
+  }
+  return null;
+}
+
+let isPaused = false;
+function togglePause() {
+  isPaused = !isPaused;
+  document.getElementById('pauseBtn').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE';
+  document.getElementById('statusBadge').textContent = isPaused ? 'PAUSED' : 'SCANNING';
+}
+async function waitIfPaused() {
+  while (isPaused) await new Promise(r => setTimeout(r, 300));
+}
+
+async function startScan() {
+  const tickers   = document.getElementById('tickerInput').value
+                      .split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
+  const interval  = document.getElementById('intervalSelect').value;
+  const tolerance = parseFloat(document.getElementById('toleranceSelect').value);
+  const tfLabel   = {'1h':'1H','4h':'4H','1d':'Daily','1wk':'Weekly','1mo':'Monthly'}[interval] || interval;
+
+  isPaused = false;
+  const scanBtn  = document.getElementById('scanBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  scanBtn.disabled = true; scanBtn.textContent = '⏳ SCANNING...';
+  pauseBtn.style.display = 'inline-block';
+  document.getElementById('errBox').style.display = 'none';
+  document.getElementById('statusBadge').textContent = 'SCANNING';
+  document.getElementById('summary').classList.remove('active');
+  document.getElementById('resultsWrap').classList.remove('active');
+
+  const pf = document.getElementById('progressFill');
+  const pt = document.getElementById('progressText');
+  const pp = document.getElementById('progressPct');
+  document.getElementById('progressWrap').classList.add('active');
+  pf.style.width = '0%';
+
+  const hits = [];
+  let failed = 0, skipped = 0;
+  const startTime = Date.now();
+
+  for (let i = 0; i < tickers.length; i++) {
+    await waitIfPaused();
+    const ticker = tickers[i];
+    const pct = Math.round((i+1)/tickers.length*100);
+    pf.style.width = pct + '%';
+    pp.textContent = pct + '%';
+    pt.textContent = `Scanning ${ticker}  (${i+1}/${tickers.length})  ·  ${hits.length} found`;
+
+    try {
+      const candles = await fetchCandles(ticker, interval);
+      if (!candles) { failed++; continue; }
+
+      const result = detectBearishSetup(candles);
+      if (!result) { skipped++; continue; }
+
+      const last     = candles[candles.length-1];
+      const prev     = candles[candles.length-2];
+      const chg      = ((last.close - prev.close) / prev.close * 100).toFixed(2);
+      const distToW4 = ((last.close - result.w4High) / result.w4High * 100).toFixed(2);
+
+      if (Math.abs(parseFloat(distToW4)) <= tolerance) {
+        hits.push({ ticker, price: last.close.toFixed(2), chg, w4High: result.w4High.toFixed(2), w3Low: result.w3Low.toFixed(2), w5Low: result.w5Low.toFixed(2), distToW4, date: last.date });
+      } else { skipped++; }
+    } catch(e) { failed++; }
+
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  document.getElementById('progressWrap').classList.remove('active');
+  pauseBtn.style.display = 'none';
+  const elapsed = ((Date.now() - startTime)/1000).toFixed(0) + 's';
+
+  document.getElementById('summary').classList.add('active');
+  document.getElementById('statHits').textContent    = hits.length;
+  document.getElementById('statTotal').textContent   = tickers.length - failed;
+  document.getElementById('statSkipped').textContent = skipped;
+  document.getElementById('statFailed').textContent  = failed;
+  document.getElementById('statTime').textContent    = elapsed;
+  document.getElementById('statusBadge').textContent = 'DONE';
+  document.getElementById('sectionTitle').textContent = `AT W4 High — ${tfLabel} · ±${tolerance}% · ${hits.length} stocks found`;
+
+  if (failed > 0) {
+    const eb = document.getElementById('errBox');
+    eb.innerHTML = failed === tickers.length
+      ? `⚠ All requests failed. Proxy may be down. Try refreshing.`
+      : `ℹ ${failed} tickers failed — ${tickers.length - failed} scanned successfully.`;
+    eb.style.display = 'block';
+  }
+
+  const container = document.getElementById('resultsContainer');
+  document.getElementById('resultsWrap').classList.add('active');
+
+  if (hits.length === 0) {
+    container.innerHTML = `<div class="message">No stocks AT W4 high (±${tolerance}%) on ${tfLabel} right now.<br><br>Try increasing tolerance % or switching timeframe.</div>`;
+  } else {
+    hits.sort((a,b) => Math.abs(parseFloat(a.distToW4)) - Math.abs(parseFloat(b.distToW4)));
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Ticker</th><th>Index</th><th>Price</th><th>Chg %</th><th>Status</th><th>W4 High — Short Zone</th><th>W3 Low</th><th>W5 Low</th><th>% From W4</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          ${hits.map(r => `
+            <tr>
+              <td class="t-tick"><a href="https://tradingview.com/chart/?symbol=${r.ticker}" target="_blank">${r.ticker} ↗</a></td>
+              <td>${getIndexTag(r.ticker)}</td>
+              <td class="t-price">$${r.price}</td>
+              <td class="${parseFloat(r.chg)>=0?'t-pos':'t-neg'}">${parseFloat(r.chg)>=0?'+':''}${r.chg}%</td>
+              <td><span class="at-w4-badge">🔻 AT W4</span></td>
+              <td class="t-lvl">$<b>${r.w4High}</b></td>
+              <td class="t-lvl">$<b>${r.w3Low}</b></td>
+              <td class="t-lvl">$<b>${r.w5Low}</b></td>
+              <td class="hot">${r.distToW4}%</td>
+              <td class="t-lvl" style="font-size:10px;">${r.date}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  scanBtn.disabled = false; scanBtn.textContent = '▶ SCAN';
+}
+</script>
+</body>
+</html>
